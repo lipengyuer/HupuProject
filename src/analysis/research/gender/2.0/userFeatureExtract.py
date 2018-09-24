@@ -3,7 +3,6 @@ import os
 path = os.getcwd()
 path = os.path.dirname(path)
 sys.path.append(path)
-
 path_src = path.split('src')[0]
 sys.path.append(path_src + "src")#项目的根目录
 from pyhanlp import HanLP
@@ -13,6 +12,7 @@ import time
 from pymongo import MongoClient
 from analysis.algorithm import splitSentence, nlp
 from pyspark import SparkContext, SparkConf
+import runTime
 #词频
 def wordFreq(wordsLists):
     wordFreqMap = {}
@@ -149,7 +149,8 @@ def lengthFeature(sentencesList, wordsList, postagsList):
     return res
 
 def getGender(uid, userInfoCollectionName):
-    MONGO_IP, MONGO_PORT ,dbname, username, password= '192.168.1.198', 27017, 'hupu', None, None
+    MONGO_IP, MONGO_PORT ,dbname, username, password = environment.MONGO_IP, environment.MONGO_PORT, \
+                                                          environment.MONGO_DB_NAME, None, None    
     conn = MongoClient(MONGO_IP, MONGO_PORT)
     db = conn[dbname]
     db.authenticate(username, password)
@@ -185,7 +186,8 @@ def extractTextFeatures(data, userInfoCollectionName=''):
 
 #向mongo插入一条数据
 def saveRecord2Mongo(data, collectionName):
-    MONGO_IP, MONGO_PORT ,dbname, username, password= '192.168.1.198', 27017, 'hupu', None, None
+    MONGO_IP, MONGO_PORT ,dbname, username, password = environment.MONGO_IP, environment.MONGO_PORT, \
+                                                          environment.MONGO_DB_NAME, None, None    
     conn = MongoClient(MONGO_IP, MONGO_PORT)
     db = conn[dbname]
     db.authenticate(username, password)
@@ -207,12 +209,12 @@ if __name__ == '__main__':
     minPostNum = 50
     uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum)
     #提取特征
-    uidFeaturesRDD = uidPostListRDD.map(lambda x: extractTextFeatures(x, userInfoCollectionName="hupuUserInfo")).\
+    uidFeaturesRDD = uidPostListRDD.map(lambda x: extractTextFeatures(x, userInfoCollectionName=runTime.USER_INFO_COLLECTION)).\
                                               filter(lambda x: len(x[1])>0)#删掉特征个数为0,即没有性别数据的用户
     #保存结果到mongo
-    uidFeaturesRDD.map(lambda x: saveRecord2Mongo({'_id': x[0], **x[1]}, 'userFeatureAll'))#全部数据
+    uidFeaturesRDD.map(lambda x: saveRecord2Mongo({'_id': x[0], **x[1]}, runTime.ORI_USER_FEATURE_COLLECTION))#全部数据
     uidFeaturesRDD.sample(False, 0.01, 666).map(lambda x: saveRecord2Mongo({'_id': x[0], **x[1]},
-                                                                            'userFeatureSample'))#抽样数据
+                                                 runTime.ORI_USER_FEATURE_SAMPLE_COLLECTION))#抽样数据
     
     
     

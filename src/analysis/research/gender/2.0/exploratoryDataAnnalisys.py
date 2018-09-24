@@ -1,3 +1,10 @@
+import sys
+import os
+path = os.getcwd()
+path = os.path.dirname(path)
+sys.path.append(path)
+path_src = path.split('src')[0]
+sys.path.append(path_src + "src")#项目的根目录
 import pymongo
 from  pymongo import MongoClient
 import pandas as pd
@@ -14,12 +21,12 @@ collection = db[userStasticsCollection]
 
 def compareSimpleFeatures(featureName=""):
     data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
-    data = {"gender": 1, **data[featureName]}#把特征和性别标签放在一个一层的map中
+    dataList = list(map(lambda x: {'gender': x['gender'], **x[featureName]}, data))#把特征和性别标签放在一个一层的map中
     df = pd.DataFrame(data)
     dataF, dataM = df[df['gender']==1], df[df['gender']==0]#把男性和女性的数据分组
     #删掉两份数据中的性别字段
-    dataF.drop(columns=['gender'])
-    dataM.drop(columns=['gender'])
+    dataF = dataF.drop(columns=['gender'])
+    dataM = dataM.drop(columns=['gender'])
     #求两份数据里，各个特征的平均值
     meanF, meanM = dataF.mean(),dataM.mean()
     colNames = list(meanF.columns)#字段名列表，用于画x轴刻度
@@ -81,25 +88,35 @@ def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq
         for i in range(len(documentFreqTopN)):
             f.write(wordFreqTopN[i][0] + " " + 
                     str(wordFreqTopN[i][1]) + " " + str(documentFreqTopN[i][1]) + '\n')
+    #返回频率和文档频率都比较高的gram，作为较优特征
+    res = set(map(lambda x: x[0], wordFreqTopN[:10000] + documentFreqTopN[:10000]))
+    return res
             
 def ngramFreatures(featureName=""):
     data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
+    
     #首先对所有的gram进行一个简单筛选，把普及率低于一定阈值(几乎所有人都不用的),总的使用次数小于一定阈值(大家都用过，然而昙花一现的)
-    getWordFreqDocumentFreq(data[featureName], jobName=featureName)
+    betterFeatureSet = getWordFreqDocumentFreq(data[featureName], jobName=featureName)
+    betterFeatureSet.add("gender")
+    #从通过初筛的所有gram中挑选使用率最高的10000个，进入下一步
+    dataList = list(map(lambda x: x[featureName].update({"gender": x['gender']}), data))#把特征和性别标签放在一个一层的map中
+    for sample in dataList:
+        for key in sample.keys():
+            if key not in betterFeatureSet:
+                del sample[key]#删除不是优质特征的条目
+    df = pd.DataFrame(dataList)
+    features = df.drop(columns=['gender'])
     #选取最好的k个特征
     featureProcessor = SelectKBest(chi2, k=20)#.fit(features, labels)
-    featureProcessor.fit(data[featureName], data['gender'])
-    data[featureName] = featureProcessor.transform(data[featureName])
-    featureNames = list(data[featureName].columns)
+    featureProcessor.fit(features, df['gender'])
+    features = featureProcessor.transform(features)
+    featureNames = list(features.columns)
     featureNameIndex = featureProcessor.transform(featureNames)
     print("被选中的特征是", featureNameIndex)#与图中的特征名核对一下
-    
-    data = {"gender": 1, **data[featureName]}#把特征和性别标签放在一个一层的map中
-    df = pd.DataFrame(data)
     dataF, dataM = df[df['gender']==1], df[df['gender']==0]#把男性和女性的数据分组
     #删掉两份数据中的性别字段
-    dataF.drop(columns=['gender'])
-    dataM.drop(columns=['gender'])
+    dataF = dataF.drop(columns=['gender'])
+    dataM = dataM.drop(columns=['gender'])
     #求两份数据里，各个特征的平均值
     meanF, meanM = dataF.mean(),dataM.mean()
     colNames = list(meanF.columns)#字段名列表，用于画x轴刻度
