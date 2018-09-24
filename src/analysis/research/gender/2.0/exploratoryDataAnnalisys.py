@@ -21,14 +21,17 @@ collection = db[userStasticsCollection]
 
 def compareSimpleFeatures(featureName=""):
     data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
-    dataList = list(map(lambda x: {'gender': x['gender'], **x[featureName]}, data))#把特征和性别标签放在一个一层的map中
+    dataList = []
+    for line in data:
+        dataList.append({'gender': line['gender'], **line[featureName]})
+    dataList = list(lambda x: x[featureName], dataList)
     df = pd.DataFrame(data)
     dataF, dataM = df[df['gender']==1], df[df['gender']==0]#把男性和女性的数据分组
     #删掉两份数据中的性别字段
     dataF = dataF.drop(columns=['gender'])
     dataM = dataM.drop(columns=['gender'])
     #求两份数据里，各个特征的平均值
-    meanF, meanM = dataF.mean(),dataM.mean()
+    meanF, meanM = dataF.mean(), dataM.mean()
     colNames = list(meanF.columns)#字段名列表，用于画x轴刻度
     ax = plt.subplot(1,1,1)
     p1, = ax.plot(meanF)
@@ -61,6 +64,8 @@ from sklearn.feature_selection import SelectKBest
 def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq'):
     wordFreqMap, ducumentFreqMap = {}, {}
     for userWordFreqMap in userWordFreqMapList:
+        if 'gender' in userWordFreqMap:
+            del userWordFreqMap['gender']
         for word in userWordFreqMap:
             if word in wordFreqMap:
                 wordFreqMap[word] += userWordFreqMap[word]#把该用户的这个词语的频数累加上
@@ -94,12 +99,14 @@ def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq
             
 def ngramFreatures(featureName=""):
     data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
-    
+    for line in data:
+        line[featureName].update({'gender': line['gender']})
     #首先对所有的gram进行一个简单筛选，把普及率低于一定阈值(几乎所有人都不用的),总的使用次数小于一定阈值(大家都用过，然而昙花一现的)
-    betterFeatureSet = getWordFreqDocumentFreq(data[featureName], jobName=featureName)
+    betterFeatureSet = getWordFreqDocumentFreq(data, jobName=featureName)
     betterFeatureSet.add("gender")
     #从通过初筛的所有gram中挑选使用率最高的10000个，进入下一步
-    dataList = list(map(lambda x: x[featureName].update({"gender": x['gender']}), data))#把特征和性别标签放在一个一层的map中
+
+    dataList = list(lambda x: x[featureName], dataList)
     for sample in dataList:
         for key in sample.keys():
             if key not in betterFeatureSet:
