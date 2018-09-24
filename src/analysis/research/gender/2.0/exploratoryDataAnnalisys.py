@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 userStasticsCollection = "userFeatureSample"
-MONGO_IP, MONGO_PORT ,dbname, username, password= '', '', '', '', ''
+MONGO_IP, MONGO_PORT ,dbname, username, password = environment.MONGO_IP, environment.MONGO_PORT, \
+                                                          environment.MONGO_DB_NAME, None, None
 conn = MongoClient(MONGO_IP, MONGO_PORT)
 db = conn[dbname]
 db.authenticate(username, password)
