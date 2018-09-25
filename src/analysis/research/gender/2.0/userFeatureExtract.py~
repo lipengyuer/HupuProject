@@ -226,8 +226,7 @@ if __name__ == '__main__':
     minPostNum = 50   
     #print(uidDataRDD.count(), uidDataRDD.take(1))
     uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum)#.sample(False, 0.1, 666)
-    with open('res.txt', 'w') as f:
-        f.write(str(uidPostListRDD.count())) + '\n')
+    print(uidPostListRDD.count())
     #提取特征
     uidFeaturesRDD = uidPostListRDD.mapValues(lambda x: extractTextFeatures(x, userInfoCollectionName=USER_INFO_COLLECTION)).filter(lambda x: len(x[1])>0)#删掉特征个数为0,即没有性别数据的用户
     #print(uidFeaturesRDD.take(100))
