@@ -14,6 +14,7 @@ from pymongo import MongoClient
 import splitSentence, nlp
 from pyspark import SparkContext, SparkConf
 import runTime
+import re
 #词频
 def wordFreq(wordsLists):
     wordFreqMap = {}
@@ -152,7 +153,7 @@ def lengthFeature(sentencesList, wordsList, postagsList):
 def getGender(uid, userInfoCollectionName):
     MONGO_IP = '192.168.1.198'
     MONGO_PORT = 27017
-    MONGO_DB_NAME = "hupu"
+    MONGO_DB_NAME = "hupu"
     MONGO_IP, MONGO_PORT ,dbname, username, password = MONGO_IP, MONGO_PORT, \
                                                           MONGO_DB_NAME, 'root', '1q2w3e4r'    
     conn = MongoClient(MONGO_IP, MONGO_PORT)
@@ -169,14 +170,15 @@ def getGender(uid, userInfoCollectionName):
 
 def extractTextFeatures(data, userInfoCollectionName=''):
     uid, postList = data[0], data[1]
-    gender = 1
-    gender = getGender(uid, userInfoCollectionName)
-    if gender==None:#如果没有性别数据，这条数据无效
-        return {}
+    gender = -1
+    #gender = getGender(uid, userInfoCollectionName)
+    #if gender==None:#如果没有性别数据，这条数据无效
+    #    return {}
     #获取分句，分词和词性标注结果
     sentencesLists, wordsLists, postagsLists = nlp.sentenceWordPostag(postList)
     #各类特征放在不同的key下
-    featureMap = {'gender': gender,
+    featureMap = {"uid": uid,
+                  'gender': gender,
                   "wordFreq": wordFreq(wordsLists), 
                   "unigramFreq": ngramFreq(postList, n=1),
                    'bigram': ngramFreq(postList, n=2), 
@@ -196,14 +198,14 @@ def getFirst(x):
 def saveRecord2Mongo(data, collectionName):
     MONGO_IP = '192.168.1.198'
     MONGO_PORT = 27017
-    MONGO_DB_NAME = "hupu"
+    MONGO_DB_NAME = "hupu"
     MONGO_IP, MONGO_PORT ,dbname, username, password = MONGO_IP, MONGO_PORT, \
                                                           MONGO_DB_NAME, 'root', '1q2w3e4r'       
     conn = MongoClient(MONGO_IP, MONGO_PORT)
     db = conn[dbname]
     db.authenticate(username, password)
     collection = db[collectionName]
-    collection.insert(data)
+    collection.insert(data, check_keys=False)
     
 if __name__ == '__main__':
     #mongo表名
@@ -216,30 +218,38 @@ if __name__ == '__main__':
     #sc.addPyFile('/opt/dev/HupuProject/src/analysis/algorithm/splitSentence.py')
     sc.addPyFile('nlp.py')#添加自定义模块的本地或者hdfs路径，以后就可以使用这个模块里的函数了
     sc.addPyFile('splitSentence.py')
-    path_postData = "/user/mydata/hupu_bxj_advocate_post_dir"#/hupu_bxj_advocate_posts_1.txt"#post数据文件路径
+    #path_postData = "/user/mydata/hupu_bxj_advocate_post_dir/hupu_bxj_advocate_posts_1.txt"#post数据文件路径
+    path_postData = "/user/mydata/hupu_bxj_foll_post_dir"#/hupu_bxj_foll_posts_4_new.txt"#post数据文件路径
     dataRDD = sc.textFile(path_postData)
     
     #去除换行符后，用分隔符分割开,然后以uid为key, post为value构建键值对rdd.部分uid是昵称，需要以str的形式存在
-    noUID, noPost = 9, 8
-    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==15).map(lambda x: (x[noUID], x[noPost])).filter(lambda x: len(x[0])<20)
+    noUID, noPost = 7, -2
+    #noUID, noPost = 9, 8
+    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==13).map(lambda x: (x[noUID], re.sub(r'<[^>]+>','',x[noPost]))).filter(lambda x: len(x[0])<20)#.replace("$", "_").replace(".", "_")
     #按照uid分组后，删除post个数小于阈值
     minPostNum = 50   
     #print(uidDataRDD.count(), uidDataRDD.take(1))
-    uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum)#.sample(False, 0.1, 666)
-    print(uidPostListRDD.count())
-    #提取特征
-    uidFeaturesRDD = uidPostListRDD.mapValues(lambda x: extractTextFeatures(x, userInfoCollectionName=USER_INFO_COLLECTION)).filter(lambda x: len(x[1])>0)#删掉特征个数为0,即没有性别数据的用户
+    uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum).repartition(10000).sample(False, 0.01, 666)
+    with open('res.txt', 'w') as f:
+        f.write(str(uidPostListRDD.count()) + '\n')    #提取特征
+    uidFeaturesRDD = uidPostListRDD.map(lambda x: extractTextFeatures(x, userInfoCollectionName=USER_INFO_COLLECTION))#.filter(lambda x: len(x[1])>0)#删掉特征个数为0,即没有性别数据的用户
     #print(uidFeaturesRDD.take(100))
     #sc.close()
-    #'''
+    
     #保存结果到mongo
-    uidFeaturesRDD.map(lambda x: saveRecord2Mongo({'_id': x[0], **x[1]}, ORI_USER_FEATURE_COLLECTION))#全部数据
-    uidFeaturesRDD.sample(False, 0.01, 666).map(lambda x: saveRecord2Mongo({'_id': x[0], **x[1]},
-                                                 ORI_USER_FEATURE_SAMPLE_COLLECTION))#抽样数据
+    #uidFeaturedataList = uidFeaturesRDD.collect()
+    #for data in uidFeaturedataList:
+    #    print(data['uid'])
+    #    saveRecord2Mongo(data, ORI_USER_FEATURE_COLLECTION)
+    #'''
+    uidFeaturesRDD.foreach(lambda x: saveRecord2Mongo(x, ORI_USER_FEATURE_COLLECTION))#全部数据
+    uidFeaturesRDD.sample(False, 0.01, 666).foreach(lambda x: saveRecord2Mongo(x,ORI_USER_FEATURE_SAMPLE_COLLECTION))#抽样数据
     print(uidFeaturesRDD.count())
     #'''
     
-    
+
+#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract.py
+
     
     
     
