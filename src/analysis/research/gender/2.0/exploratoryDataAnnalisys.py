@@ -10,33 +10,41 @@ from  pymongo import MongoClient
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-
-userStasticsCollection = "userFeatureSample"
+from src.analysis.config import environment
+userStasticsCollection = "completeUserFeature"
 MONGO_IP, MONGO_PORT ,dbname, username, password = environment.MONGO_IP, environment.MONGO_PORT, \
                                                           environment.MONGO_DB_NAME, None, None
 conn = MongoClient(MONGO_IP, MONGO_PORT)
 db = conn[dbname]
-db.authenticate(username, password)
+# db.authenticate(username, password)
 collection = db[userStasticsCollection]
 
 def compareSimpleFeatures(featureName=""):
-    data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
+    data = collection.find({}, {'uid':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
     dataList = []
     for line in data:
+        print("正在读取数据", line['uid'])
         dataList.append({'gender': line['gender'], **line[featureName]})
-    dataList = list(lambda x: x[featureName], dataList)
-    df = pd.DataFrame(data)
+    #dataList = list(lambda x: x[featureName], dataList)
+    print("展示一条数据", line)
+    print("完成数据读取，开始分组")
+    df = pd.DataFrame(dataList)
+    #print(df)
+    # df = df.drop(columns=['_id'])
     dataF, dataM = df[df['gender']==1], df[df['gender']==0]#把男性和女性的数据分组
     #删掉两份数据中的性别字段
-    dataF = dataF.drop(columns=['gender'])
+    dataF = dataF.drop(columns=['gender' ])
     dataM = dataM.drop(columns=['gender'])
     #求两份数据里，各个特征的平均值
-    meanF, meanM = dataF.mean(), dataM.mean()
-    colNames = list(meanF.columns)#字段名列表，用于画x轴刻度
+    print("男女数量分别是", dataM.shape[0], dataF.shape[0])
+    # print(dataF)
+    meanF, meanM = dataF.mean(axis = 0), dataM.mean(axis = 0)
+    colNames = list(dataF.columns)#字段名列表，用于画x轴刻度
+    print(colNames)
     ax = plt.subplot(1,1,1)
     p1, = ax.plot(meanF)
     p2, = ax.plot(meanM)
-    plt.xticks(colNames)
+    # plt.xticks(colNames)
     plt.xlabel(featureName)
     plt.ylabel("mean frequency")
     plt.legend(handles = [p1, p2], labels = ["female", 'male'])
@@ -140,6 +148,7 @@ if __name__ == '__main__':
     #从抽样表中查询数据，然后查询出这些用户的数据存储到一个新的表中，用来分析
     #查看两种性别的语句长度特征，形成两条取值曲线来对比
     compareLengthFeatures()
+    '''
     #特殊符号频率
     specialCharFeatures()
     #虚词频率
@@ -153,5 +162,5 @@ if __name__ == '__main__':
     ngramFreatures(featureName='postagBigramFreq')
     ngramFreatures(featureName='postagUnigramFreq')
     ngramFreatures(featureName='postagTrigramFreq')
-    
+    '''
     

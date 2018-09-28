@@ -7,10 +7,11 @@ def addGendertoOriFeature(dbname, collectionName, completeUserFeature):
     def getGender(uid, db):
         collection = db['hupuUserInfo']
         gender = collection.find_one({'uid': uid})
-        if 'gender' in gender:
+        if gender!=None and 'gender' in gender:
             return 1 if gender['gender']=='f' else 0
         else:
             return -1
+
     conn = MongoClient('192.168.1.198', 27017)
     db = conn[dbname]
     collection = db[collectionName]
