@@ -2,9 +2,8 @@ import sklearn as sk
 import numpy as np
 import pandas as pd
 import random
-from sklearn.cross_validation import KFold as kf
 from sklearn.metrics import confusion_matrix
-
+from sklearn.model_selection import KFold as kf
 
 class StackingClassifier():
 
@@ -46,13 +45,13 @@ class StackingClassifier():
         result = self.metaModel.predict(basePrediction)
         return result
 
-    def kFoldValidatoin(self, XMap, Y, k=10, classNum=0):
+    def kFoldValidatoin(self, XMap, Y, k=10, classNum=2):
         randomIndex = random.sample(range(len(Y)), len(Y))
         for clfName in XMap:
             XMap[clfName] = XMap[clfName][randomIndex]
         y = Y[randomIndex]
         cmTotal = np.zeros((classNum, classNum))
-        index = kf(len(Y), k)
+        index = kf(n_splits=k).split(list(range(len(Y))))
         for line in index:
             trainIndex = line[0]
             testIndex = line[1]
