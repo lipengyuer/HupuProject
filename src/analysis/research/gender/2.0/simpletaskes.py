@@ -27,5 +27,19 @@ def addGendertoOriFeature(dbname, collectionName, completeUserFeature):
         count += 1
         print(gender, count)
 
+import random
+def downSampling4Man(completeUserFeature, completeUserFeatureSample):
+    conn = MongoClient('192.168.1.198', 27017)
+    db = conn['hupu']
+    collection = db[completeUserFeature]
+    for data in collection.find({}):
+        if (data['gender']==0 and random.uniform(0,1)>0.95) or data['gender']==1:
+            pass
+        else:
+            continue
+        print(data['gender'])
+        db[completeUserFeatureSample].insert(data, check_keys=False)
+
 if __name__ == '__main__':
-    addGendertoOriFeature('hupu', 'oriUserFeatureAll','completeUserFeature')
+    #addGendertoOriFeature('hupu', 'oriUserFeatureAll','completeUserFeature')
+    downSampling4Man('completeUserFeature', 'completeUserFeatureSample')
