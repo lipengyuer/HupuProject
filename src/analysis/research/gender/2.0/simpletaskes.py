@@ -32,12 +32,12 @@ def downSampling4Man(completeUserFeature, completeUserFeatureSample):
     conn = MongoClient('192.168.1.198', 27017)
     db = conn['hupu']
     collection = db[completeUserFeature]
+    db[completeUserFeatureSample].drop()
     for data in collection.find({}):
-        if (data['gender']==0 and random.uniform(0,1)>0.95) or data['gender']==1:
+        if (data['gender']==0 and random.uniform(0,1)>0.90) or data['gender']==1:
             pass
         else:
             continue
-        print(data['gender'])
         db[completeUserFeatureSample].insert(data, check_keys=False)
 
 if __name__ == '__main__':

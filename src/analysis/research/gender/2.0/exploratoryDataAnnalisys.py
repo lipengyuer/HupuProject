@@ -85,17 +85,25 @@ def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq
                 ducumentFreqMap[word] = 1
     print(jobName, "原始词汇表的大小是", len(wordFreqMap))
     N = 50
-    wordFreqTopN = sorted(wordFreqMap.items(), key= lambda x: x[1],reverse=True)
-    documentFreqTopN = sorted(ducumentFreqMap.items(), key= lambda x: x[1],reverse=True)
-    print("词频top N 是：")
-    for line in wordFreqTopN[:N]:
-        print(line[0], line[1])
-        print("词频top N 是：")
-    print("###################")
-    print("文档频率top N 是:")
-    for line in documentFreqTopN[:N]:
-        print(line[0], line[1])
-    print("###################")
+    noneWords1 = set(sorted(wordFreqMap.items(), key= lambda x: x[1],reverse=True)[-10000:])
+    noneWords2 = set(sorted(ducumentFreqMap.items(), key= lambda x: x[1],reverse=True)[:1000])
+    TFIDFMAP = {}
+    numDoc = len(userWordFreqMapList)
+    for word in wordFreqMap:
+        if word in noneWords1 or word in noneWords2:
+            continue
+        tf = wordFreqMap.get(word, 0)
+        idf = numDoc/(ducumentFreqMap.get(word, 1))
+        TFIDFMAP[word] = np.log(tf*idf)
+    # print("词频top N 是：")
+    # for line in wordFreqTopN[:N]:
+    #     print(line[0], line[1])
+    #     print("词频top N 是：")
+    # print("###################")
+    # print("文档频率top N 是:")
+    # for line in documentFreqTopN[:N]:
+    #     print(line[0], line[1])
+    # print("###################")
     
     #把统计结果存储到文本文件，便于仔细分析
     # with open(jobName + ".txt", 'w') as f:
@@ -105,50 +113,68 @@ def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq
     #                + documentFreqTopN[i][0] + " "+ str(documentFreqTopN[i][1]) + '\n'
     #         f.write(line)
     #返回频率和文档频率都比较高的gram，作为较优特征
-    res = set(map(lambda x: x[0], wordFreqTopN[:10000] + documentFreqTopN[:10000]))
+    #res = set(map(lambda x: x[0], wordFreqTopN[500:10000] + documentFreqTopN[500:10000]))
+    res = sorted(TFIDFMAP.items(), key= lambda x: x[1],reverse=True)[1000:50000]
+    res = set(map(lambda x: x[0], res))
     return res
 
+# def readlines(path):
+#     with open(path, 'r') as f:
 import pickle
 def ngramFreatures(featureName=""):
     data = collection.find({}, {'_id':1, "gender": 1, featureName: 1})#从mongo中查询这个特征以及对应的性别标签
-    # dataList = []
-    # print("正在读取数据")
-    # count = 0
-    # for line in data:
-    #     line[featureName].update({'gender': line['gender']})
-    #     dataList.append(line[featureName])
-    #     count += 1
-    #     print("读取数据的进度是", count, "/", 10000)
+    dataList = []
+    print("正在读取数据")
+    count = 0
+    for line in data:
+        line[featureName].update({'gender': line['gender']})
+        dataList.append(line[featureName])
+        count += 1
+        if count == 5000:
+            break
+        print("读取数据的进度是", count, "/", 5000)
     # pickle.dump(dataList, open('data.pkl','wb'))
     # dataList = pickle.load(open('data.pkl','rb'))
-    # print(dataList[0])
-    # #首先对所有的gram进行一个简单筛选，把普及率低于一定阈值(几乎所有人都不用的),总的使用次数小于一定阈值(大家都用过，然而昙花一现的)
-    # print("正在初步筛选特征。")
-    # betterFeatureSet = getWordFreqDocumentFreq(dataList, jobName=featureName)
-    # betterFeatureSet.add("gender")
-    # #从通过初筛的所有gram中挑选使用率最高的10000个，进入下一步
-    # import time
-    # for sample in dataList:
-    #     for key in list(sample.keys()):
-    #         if key not in betterFeatureSet:
-    #             del sample[key]#删除不是优质特征的条目
+    print(dataList[0])
+    #首先对所有的gram进行一个简单筛选，把普及率低于一定阈值(几乎所有人都不用的),总的使用次数小于一定阈值(大家都用过，然而昙花一现的)
+    print("正在初步筛选特征。")
+    betterFeatureSet = getWordFreqDocumentFreq(dataList, jobName=featureName)
+    maleSpecialWords = [ '武器库',  'UFC','硬邦邦的', '龟头', '前臂', '尼玛比']
+    femaleSpecialWords = ['小女子', '小宝贝', "美少年", '萌图', '治愈系', '防晒霜',
+                          '萌系']
+    betterFeatureSet = betterFeatureSet | set(maleSpecialWords) | set(femaleSpecialWords)
+    betterFeatureSet.add("gender")
+    #从通过初筛的所有gram中挑选使用率最高的10000个，进入下一步
+    import time
+    print("删除不优质的特征")
+    for sample in dataList:
+        for key in list(sample.keys()):
+            if key not in betterFeatureSet:
+                del sample[key]#删除不是优质特征的条目
     # pickle.dump(dataList, open('data1.pkl','wb'))
-    dataList = pickle.load(open('data1.pkl','rb'))
+    # dataList = pickle.load(open('data1.pkl','rb'))
     df = pd.DataFrame(dataList).fillna(0)
     features = df.drop(columns=['gender'])
-    #选取最好的k个特征
-    featureProcessor = SelectKBest(chi2, k=20)#.fit(features, labels)
-    featureProcessor.fit(features, df['gender'])
-    features = featureProcessor.transform(features)
+
+    # features = featureProcessor.transform(features)
     featureNames = list(df.columns)
     featureNames.remove('gender')
     featureNameIndex = list(range(len(featureNames)))
+    #选取最好的k个特征
+    print("挑选好的特征")
+    from  sklearn.feature_selection import mutual_info_classif
+    featureProcessor = SelectKBest(mutual_info_classif, k=3000)#.fit(features, labels)
+    featureProcessor.fit(features, df['gender'])
     featureNameIndex = featureProcessor.transform(np.array([featureNameIndex]))[0]
-    featureNameList = np.array(featureNames)[featureNameIndex]
-    print("提取出来的特征名称是", featureNameList)
-    print("被选中的特征是", featureNameIndex)#与图中的特征名核对一下
+    featureNames = np.array(featureNames)[featureNameIndex]
+    featureNames = set(featureNames) | set(maleSpecialWords) | set(femaleSpecialWords)
+    print("提取出来的特征名称是", "kabukabu".join(featureNames))
+    with open("goodFeature.txt", 'w') as f:
+        f.write("kabukabu".join(featureNames))
+    # print("被选中的特征是", featureNameIndex)#与图中的特征名核对一下
+    featureNames = list(featureNames)
     dataF, dataM = df[df['gender']==1], df[df['gender']==0]#把男性和女性的数据分组
-    dataF, dataM = dataF[featureNameList], dataM[featureNameList]
+    dataF, dataM = dataF[featureNames], dataM[featureNames]
     #删掉两份数据中的性别字段
     # dataF = dataF.drop(columns=['gender'])
     # dataM = dataM.drop(columns=['gender'])
@@ -163,7 +189,51 @@ def ngramFreatures(featureName=""):
     plt.ylabel("mean frequency")
     plt.legend(handles = [p1, p2], labels = ["female", 'male'])
     plt.show()
-    
+
+def compareVocabs():
+    featureName = 'completeUserFeatureSample'
+    collection = db[featureName]
+    data = collection.find({}, {'gender': 1, 'wordFreq': 1})
+    maleVocab, femaleVocab = set({}), set({})
+    data = list(data)
+    for line in data:
+        if line['gender'] == 0:
+            maleVocab = maleVocab | set(line['wordFreq'].keys())
+        else:
+            femaleVocab = femaleVocab | set(line['wordFreq'].keys())
+    print("男性用户的词汇量是", len(maleVocab), ',女性的是', len(femaleVocab), '.')
+    only4Male = maleVocab - femaleVocab
+    only4Female = femaleVocab - maleVocab
+    only4MaleFreq, only4FemaleFreq = {}, {}
+    for line in data:
+        if line['gender'] == 0:
+            for word in line['wordFreq']:
+                if word in only4MaleFreq:
+                    only4MaleFreq[word] += 1
+                else:
+                    only4MaleFreq[word] = 1
+        else:
+            for word in line['wordFreq']:
+                if word in only4FemaleFreq:
+                    only4FemaleFreq[word] += 1
+                else:
+                    only4FemaleFreq[word] = 1
+    for word in list(only4MaleFreq.keys()):
+        if word not in only4Male:
+            del only4MaleFreq[word]
+    for word in list(only4FemaleFreq.keys()):
+        if word not in only4Female:
+            del only4FemaleFreq[word]
+
+    only4MaleFreqSorted = sorted(only4MaleFreq.items(), key=lambda x: x[1], reverse=True)
+    only4FemaleFreqSorted = sorted(only4FemaleFreq.items(), key=lambda x: x[1], reverse=True)
+    with open("maleData.txt", 'w') as f:
+        for line in only4MaleFreqSorted:
+            f.write(str(line[0]).replace('\n', '') + " " + str(line[1]) + "\n")
+    with open("femaleData.txt", 'w') as f:
+        for line in only4FemaleFreqSorted:
+            f.write(str(line[0]).replace('\n', '') + " " + str(line[1]) + "\n")
+
 if __name__ == '__main__':
     #从抽样表中查询数据，然后查询出这些用户的数据存储到一个新的表中，用来分析
     #查看两种性别的语句长度特征，形成两条取值曲线来对比
@@ -184,4 +254,6 @@ if __name__ == '__main__':
     # ngramFreatures(featureName='postagUnigramFreq')
     # ngramFreatures(featureName='postagTrigramFreq')
 
-    
+    # compareVocabs()
+
+

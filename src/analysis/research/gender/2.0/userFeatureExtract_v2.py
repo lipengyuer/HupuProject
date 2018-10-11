@@ -208,50 +208,11 @@ def saveRecord2Mongo(data, collectionName):
     collection.insert(data, check_keys=False)
     
 if __name__ == '__main__':
-    #mongo表名
-    ORI_USER_FEATURE_COLLECTION = 'oriUserFeatureAll'#用户的原始特征
-    ORI_USER_FEATURE_SAMPLE_COLLECTION = 'oriUserFeatureSample'#
-    USER_INFO_COLLECTION = 'hupuUserInfo'#爬虫获取的用户个人资料
-
-    conf = SparkConf().setAppName("hupu_user_feature_extraction")#配置spark任务的基本参数
-    sc = SparkContext(conf = conf)#创建sc对象
-    #sc.addPyFile('/opt/dev/HupuProject/src/analysis/algorithm/nlp.py')#添加自定义模块的本地或者hdfs路径，以后就可以使用这个模块里的函数了
-    #sc.addPyFile('/opt/dev/HupuProject/src/analysis/algorithm/splitSentence.py')
-    sc.addPyFile('nlp.py')#添加自定义模块的本地或者hdfs路径，以后就可以使用这个模块里的函数了
-    sc.addPyFile('splitSentence.py')
-    #path_postData = "/user/mydata/hupu_bxj_advocate_post_dir/hupu_bxj_advocate_posts_1.txt"#post数据文件路径
-    path_postData = "/user/mydata/hupu_bxj_foll_post_dir"#/hupu_bxj_foll_posts_4_new.txt"#post数据文件路径
-    dataRDD = sc.textFile(path_postData)
-    
-    #去除换行符后，用分隔符分割开,然后以uid为key, post为value构建键值对rdd.部分uid是昵称，需要以str的形式存在
-    noUID, noPost = 7, -2
-    #noUID, noPost = 9, 8
-    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==13).map(lambda x: (x[noUID], re.sub(r'<[^>]+>','',x[noPost]))).filter(lambda x: len(x[0])<20)#.replace("$", "_").replace(".", "_")
-    #按照uid分组后，删除post个数小于阈值
-    minPostNum = 50   
-    #print(uidDataRDD.count(), uidDataRDD.take(1))
-    uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum).repartition(10000)#.sample(False, 0.01, 666)
-    with open('res.txt', 'w') as f:
-        f.write(str(uidPostListRDD.count()) + '\n')    #提取特征
-    uidFeaturesRDD = uidPostListRDD.map(lambda x: extractTextFeatures(x, userInfoCollectionName=USER_INFO_COLLECTION))#.filter(lambda x: len(x[1])>0)#删掉特征个数为0,即没有性别数据的用户
-    #print(uidFeaturesRDD.take(100))
-    #sc.close()
-    
-    #保存结果到mongo
-    #uidFeaturedataList = uidFeaturesRDD.collect()
-    #for data in uidFeaturedataList:
-    #    print(data['uid'])
-    #    saveRecord2Mongo(data, ORI_USER_FEATURE_COLLECTION)
-    #'''
-    uidFeaturesRDD.foreach(lambda x: saveRecord2Mongo(x, ORI_USER_FEATURE_COLLECTION))#全部数据
-    uidFeaturesRDD.sample(False, 0.01, 666).foreach(lambda x: saveRecord2Mongo(x,ORI_USER_FEATURE_SAMPLE_COLLECTION))#抽样数据
-    print(uidFeaturesRDD.count())
-    #'''
-    
-
-#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract.py
-
-    
-    
-    
-    
+    pass
+    #获取用户个人资料
+    #基于用户个人资料统计基本信息
+    #分布式化为pyspark.dataframe
+    #与主贴信息连接，然后与这些主贴的回复连接,按照uid对回复分组之后，统计这些回复的情况
+    #存储数据
+    #没毛病，这次我们需要知道一个用户的主贴的跟帖的情况。而原始回复数据里没有主贴对应用户uid,需要关联才能得到.
+    #使用用户个人资料来开始，也是为了缩小数据规模.
