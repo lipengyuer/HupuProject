@@ -25,8 +25,10 @@ class LSTMClassifier():
         self.class_num = class_num
         config = None
         sess = None
+        self.learning_rate = None
+        self.global_step = None
 
-    def initGraph(self):
+    def initGraph(self, ifDecrLR=True):
         self.config = tf.ConfigProto()
         self.sess = tf.Session(config=self.config)
         self._X = tf.placeholder(tf.float32, [None, self.input_size])
@@ -50,8 +52,22 @@ class LSTMClassifier():
         # 损失和评估函数
 
         self.cross_entropy = -tf.reduce_mean(self.y * tf.log(self.y_pre))
+        # self.cross_entropy = -tf.reduce_sum(self.y * tf.log(self.y_pre))
+
+        # self.cross_entropy = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(logits=self.y_pre, labels=self.y))
         #self.train_op = tf.train.MomentumOptimizer(momentum=1,learning_rate=self.lr).minimize(self.cross_entropy)
-        self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.cross_entropy)
+
+        if ifDecrLR==True:
+            # print("学习率", self.learning_rate)
+            batch = tf.shape(self._X)[0]
+            self.global_step = tf.Variable(0)
+            self.learning_rate = tf.train.exponential_decay(self.lr, self.global_step, decay_steps=self.input_size / batch,
+                                                            decay_rate=1,
+                                                            staircase=True)
+            self.train_op = tf.train.AdamOptimizer(self.learning_rate).minimize(self.cross_entropy, global_step=self.global_step)
+        else:
+            self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.cross_entropy)
+
         self.correct_prediction = tf.equal(tf.argmax(self.y_pre, 1), tf.argmax(self.y, 1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, "float"))
         self.sess.run(tf.global_variables_initializer())

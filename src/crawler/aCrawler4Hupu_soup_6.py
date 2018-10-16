@@ -31,7 +31,7 @@ def sql_insert_many(mysql_conn, mysql_cur, sql_str, data_list):
 
 def myLogin():
     # 设置保存cookie的文件，同级目录下的cookie.txt
-    filename = r'C:\Users\Administrator\PycharmProjects\test\hupu\crawler\cookies.txt'    # cookie位置，这里使用的是火狐浏览器的cookie
+    filename = r'cookies.txt'    # cookie位置，这里使用的是火狐浏览器的cookie
     # 声明一个MozillaCookieJar对象实例来保存cookie，之后写入文件
     cookie = cookiejar.MozillaCookieJar()
     cookie.load(filename, ignore_discard=True, ignore_expires=True)
@@ -378,7 +378,7 @@ def readLinesInFile(fileName):
         return lines
 
 def initBloomFilter():
-    data_dir = r'c:\Users\Administrator\PycharmProjects\test\hupu\crawler\post_id'
+    data_dir = '../../data/post_id'
     files = os.listdir(data_dir)
     for file in files:
         fileName = data_dir + '\\' + file
@@ -392,7 +392,7 @@ def initBloomFilter():
 
 def initTaskQueue():
     initBloomFilter()
-    for i in range(5279401, 3000 * 10000):#6000000):#
+    for i in range(5279401, 10000000):#6000000):#
         if i%100000==0:
             print("正在初始化任务队列", i)
         if i not in runTime.BLOOMFILTER_POST:

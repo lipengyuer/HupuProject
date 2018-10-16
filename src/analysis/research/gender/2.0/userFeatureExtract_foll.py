@@ -240,8 +240,8 @@ def saveRecord2Mongo(data, collectionName):
     
 if __name__ == '__main__':
     #mongo表名
-    ORI_USER_FEATURE_COLLECTION = 'oriUserFeatureAll'#用户的原始特征
-    ORI_USER_FEATURE_SAMPLE_COLLECTION = 'oriUserFeatureSample'#
+    ORI_USER_FEATURE_COLLECTION = 'oriUserFeatureAll_foll'#用户的原始特征
+    ORI_USER_FEATURE_SAMPLE_COLLECTION = 'oriUserFeatureSample_foll'#
     USER_INFO_COLLECTION = 'hupuUserInfo'#爬虫获取的用户个人资料
 
     conf = SparkConf().setAppName("hupu_user_feature_extraction")#配置spark任务的基本参数
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     #去除换行符后，用分隔符分割开,然后以uid为key, post为value构建键值对rdd.部分uid是昵称，需要以str的形式存在
     noUID, noPost, noCitedUID = 7, -2, 9
     #noUID, noPost = 9, 8
-    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==13).map(lambda x: (x[noUID], [re.sub(r'<[^>]+>','',x[noPost]), x[noCitedUID]])).filter(lambda x: len(x[0])<20)#.replace("$", "_").replace(".", "_")
+    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==13).map(lambda x: (x[noUID], [re.sub(r'<[^>]+>','',x[noPost]), x[noCitedUID]]))
     #按照uid分组后，删除post个数小于阈值
     minPostNum = 50   
     #print(uidDataRDD.count(), uidDataRDD.take(1))
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     #'''
 
 
-#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract.py
+#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract_foll.py
 
     
     

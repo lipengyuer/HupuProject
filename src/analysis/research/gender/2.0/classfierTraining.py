@@ -229,20 +229,6 @@ def testClassifier(featureCollectionName = "", scale=True):
         for i in range(len(x)):
             temp = []
             for n in x[i]:
-                # v = []
-                # if n==0:
-                #     v = [1, 0, 0]
-                # elif 0< n <= 1:
-                #     v = [0, 1, 0]
-                # else:
-                #     v = [0, 0, 1]
-                # temp += v
-                # elif 20 < n <= 50:
-                #     v = 3
-                # elif 50 < n <= 100:
-                #     v = 4
-                # else:
-                #     v = 5
                 v = 1 if n>0 else 0
                 temp.append(v)
             res.append(temp)
@@ -488,7 +474,7 @@ if __name__ == '__main__':
     with open("goodFeature.txt", 'r') as f:
         s = f.readline()
     # queryGramFreqFeatures(featureName="wordFreq", goodFeatureNameList=s.split('kabukabu'))
-    # testClassifier(featureCollectionName='wordFreq', scale=True)#0.75
+    testClassifier(featureCollectionName='wordFreq', scale=True)#0.75
     # s = """あkabukabu三kabukabu专kabukabu东kabukabu个kabukabu中kabukabu临kabukabu为kabukabu乃kabukabu么kabukabu乐kabukabu乖kabukabu买kabukabu了kabukabu事kabukabu交kabukabu享kabukabu亲kabukabu仁kabukabu今kabukabu仓kabukabu仔kabukabu他kabukabu们kabukabu价kabukabu会kabukabu你kabukabu佳kabukabu信kabukabu俺kabukabu偶kabukabu傻kabukabu儿kabukabu兄kabukabu光kabukabu内kabukabu几kabukabu出kabukabu刀kabukabu分kabukabu判kabukabu利kabukabu制kabukabu力kabukabu加kabukabu努kabukabu卜kabukabu卡kabukabu卫kabukabu厄kabukabu去kabukabu又kabukabu友kabukabu双kabukabu叔kabukabu受kabukabu叮kabukabu叶kabukabu各kabukabu合kabukabu君kabukabu听kabukabu呀kabukabu呃kabukabu呆kabukabu员kabukabu呜kabukabu呢kabukabu咔kabukabu咩kabukabu咳kabukabu品kabukabu哇kabukabu哈kabukabu哎kabukabu哒kabukabu哟kabukabu哦kabukabu哭kabukabu哼kabukabu商kabukabu啊kabukabu啦kabukabu啧kabukabu啪kabukabu喂kabukabu喔kabukabu喜kabukabu喵kabukabu嗯kabukabu嗷kabukabu嘛kabukabu嘤kabukabu嘶kabukabu嘻kabukabu噔kabukabu噗kabukabu噢kabukabu回kabukabu团kabukabu囧kabukabu国kabukabu坛kabukabu型kabukabu垫kabukabu外kabukabu天kabukabu太kabukabu头kabukabu奖kabukabu女kabukabu她kabukabu好kabukabu妹kabukabu姐kabukabu姑kabukabu姚kabukabu娃kabukabu娘kabukabu婚kabukabu媒kabukabu嫂kabukabu子kabukabu存kabukabu孩kabukabu守kabukabu官kabukabu宝kabukabu实kabukabu宪kabukabu家kabukabu射kabukabu小kabukabu少kabukabu崴kabukabu差kabukabu巴kabukabu市kabukabu帅kabukabu希kabukabu帖kabukabu席kabukabu帮kabukabu幸kabukabu库kabukabu应kabukabu店kabukabu座kabukabu建kabukabu开kabukabu弟kabukabu张kabukabu弹kabukabu强kabukabu微kabukabu心kabukabu快kabukabu恋kabukabu恤kabukabu恭kabukabu息kabukabu您kabukabu情kabukabu惠kabukabu想kabukabu愉kabukabu我kabukabu战kabukabu所kabukabu手kabukabu打kabukabu技kabukabu投kabukabu抗kabukabu折kabukabu报kabukabu抱kabukabu拆kabukabu拜kabukabu持kabukabu挎kabukabu挡kabukabu换kabukabu掌kabukabu接kabukabu控kabukabu援kabukabu摸kabukabu撸kabukabu攒kabukabu支kabukabu收kabukabu攻kabukabu故kabukabu文kabukabu斜kabukabu新kabukabu日kabukabu旺kabukabu易kabukabu曼kabukabu朋kabukabu望kabukabu木kabukabu术kabukabu机kabukabu杀kabukabu李kabukabu村kabukabu来kabukabu杯kabukabu柜kabukabu框kabukabu梅kabukabu欢kabukabu款kabukabu正kabukabu此kabukabu步kabukabu比kabukabu气kabukabu汉kabukabu江kabukabu油kabukabu治kabukabu波kabukabu注kabukabu泪kabukabu淘kabukabu渣kabukabu满kabukabu火kabukabu炜kabukabu然kabukabu煤kabukabu照kabukabu爱kabukabu爽kabukabu片kabukabu牙kabukabu犯kabukabu猛kabukabu王kabukabu玩kabukabu球kabukabu瓦kabukabu生kabukabu用kabukabu男kabukabu皇kabukabu盒kabukabu盖kabukabu看kabukabu真kabukabu眼kabukabu着kabukabu睡kabukabu矿kabukabu磨kabukabu示kabukabu祝kabukabu神kabukabu秀kabukabu秋kabukabu秒kabukabu穆kabukabu穿kabukabu突kabukabu站kabukabu童kabukabu笑kabukabu算kabukabu箭kabukabu篮kabukabu粉kabukabu粑kabukabu红kabukabu级kabukabu纳kabukabu纸kabukabu线kabukabu练kabukabu终kabukabu绑kabukabu绒kabukabu给kabukabu绣kabukabu继kabukabu维kabukabu网kabukabu置kabukabu群kabukabu翻kabukabu育kabukabu肿kabukabu胎kabukabu能kabukabu脚kabukabu脸kabukabu色kabukabu节kabukabu苦kabukabu莲kabukabu菜kabukabu萌kabukabu营kabukabu萨kabukabu蜜kabukabu街kabukabu衫kabukabu袜kabukabu裤kabukabu规kabukabu言kabukabu謝kabukabu访kabukabu译kabukabu询kabukabu语kabukabu请kabukabu诺kabukabu谢kabukabu豆kabukabu贝kabukabu账kabukabu贸kabukabu费kabukabu赛kabukabu跳kabukabu踏kabukabu身kabukabu车kabukabu转kabukabu辛kabukabu辰kabukabu迎kabukabu进kabukabu迷kabukabu选kabukabu通kabukabu速kabukabu逼kabukabu郅kabukabu配kabukabu采kabukabu量kabukabu鉴kabukabu钱kabukabu银kabukabu铺kabukabu链kabukabu锋kabukabu错kabukabu长kabukabu闹kabukabu闻kabukabu防kabukabu雁kabukabu鞋kabukabu顶kabukabu饰kabukabu马kabukabu驭kabukabu验kabukabu高kabukabu鳖kabukabu鸟kabukabu鸭kabukabu麦kabukabu黑kabukabu默kabukabu龙kabukabu﹏kabukabu﹐kabukabu！kabukabu（kabukabu）kabukabu，kabukabu：kabukabu；kabukabu＝kabukabu？kabukabuＣkabukabuＨkabukabu＿kabukabu～kabukabu￣kabukabu￥kabukabu�"""
     # queryGramFreqFeatures(featureName="unigramFreq", goodFeatureNameList=s.split('kabukabu'))
     # testClassifier(featureCollectionName='unigramFreq', scale=True)

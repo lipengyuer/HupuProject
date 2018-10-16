@@ -41,5 +41,6 @@ def downSampling4Man(completeUserFeature, completeUserFeatureSample):
         db[completeUserFeatureSample].insert(data, check_keys=False)
 
 if __name__ == '__main__':
-    #addGendertoOriFeature('hupu', 'oriUserFeatureAll','completeUserFeature')
+    # addGendertoOriFeature('hupu', 'oriUserFeatureAll','completeUserFeature')
     downSampling4Man('completeUserFeature', 'completeUserFeatureSample')
+

@@ -187,17 +187,23 @@ def specialFeatureInHupu(postList):
             specialFeatureInHupu['goWhoring'] += 1
     return specialFeatureInHupu
 
-def citingNumber(citedUIDList):
-    res = {"citingNum": 0, "postNum": 0}
-    res['postNum'] = len(citedUIDList)
-    for line in citedUIDList:
-        if line != "null" or len(line)>4:
-            res['citingNum'] += 1
+def titleFeatures(titleList):
+    res = {"repostNum": 0, "postNum": 0}
+    for line in titleList:
+        res['postNum'] += 1
+        if "zt" in line or"ZT" in line or "转帖" in line:
+            res['repostNum'] += 1
     return res
+
+def blockListDetail(blockList):
+    blockList = list(set(blockList))
+    return blockList
 
 def extractTextFeatures(data, userInfoCollectionName=''):
     uid, dataList = data[0], data[1]
-    postList, citedUIDList = list(map(lambda x:x[0], dataList)),list(map(lambda x:x[1], dataList))
+    postList, blockList, titleList = list(map(lambda x:x[0], dataList)),\
+                                     list(map(lambda x:x[1], dataList)), \
+                                     list(map(lambda x: x[2], dataList))
     gender = -1
     #gender = getGender(uid, userInfoCollectionName)
     #if gender==None:#如果没有性别数据，这条数据无效
@@ -218,7 +224,8 @@ def extractTextFeatures(data, userInfoCollectionName=''):
                   'punctuationMarkFreq': punctuationMarkFreq(postList),
                   'sentenceLengthFeatures': lengthFeature(sentencesLists, wordsLists, postagsLists),
                   "specialFeatureInHupu": specialFeatureInHupu(postList),
-                  "citingCount": citingNumber(postList)
+                  "blockList": blockListDetail(blockList),
+                  'titleFeatures': titleFeatures(titleList)
                   }
     return featureMap
 
@@ -240,26 +247,25 @@ def saveRecord2Mongo(data, collectionName):
     
 if __name__ == '__main__':
     #mongo表名
-    ORI_USER_FEATURE_COLLECTION = 'oriUserFeatureAll'#用户的原始特征
-    ORI_USER_FEATURE_SAMPLE_COLLECTION = 'oriUserFeatureSample'#
+    ORI_USER_FEATURE_COLLECTION = 'oriUserFeatureAll_adv'#用户的原始特征
+    ORI_USER_FEATURE_SAMPLE_COLLECTION = 'oriUserFeatureSample_adv'#
     USER_INFO_COLLECTION = 'hupuUserInfo'#爬虫获取的用户个人资料
 
     conf = SparkConf().setAppName("hupu_user_feature_extraction")#配置spark任务的基本参数
     sc = SparkContext(conf = conf)#创建sc对象
-    #sc.addPyFile('/opt/dev/HupuProject/src/analysis/algorithm/nlp.py')#添加自定义模块的本地或者hdfs路径，以后就可以使用这个模块里的函数了
-    #sc.addPyFile('/opt/dev/HupuProject/src/analysis/algorithm/splitSentence.py')
     sc.addPyFile('nlp.py')#添加自定义模块的本地或者hdfs路径，以后就可以使用这个模块里的函数了
     sc.addPyFile('splitSentence.py')
-    #path_postData = "/user/mydata/hupu_bxj_advocate_post_dir/hupu_bxj_advocate_posts_1.txt"#post数据文件路径
-    path_postData = "/user/mydata/hupu_bxj_foll_post_dir"#/hupu_bxj_foll_posts_4_new.txt"#post数据文件路径
+    # path_postData = "/user/mydata/hupu_bxj_advocate_post_dir/hupu_bxj_advocate_posts_1.txt"#post数据文件路径
+    path_postData = "/user/mydata/hupu_bxj_advocate_post_dir"#/hupu_bxj_foll_posts_4_new.txt"#post数据文件路径
     dataRDD = sc.textFile(path_postData)
     
     #去除换行符后，用分隔符分割开,然后以uid为key, post为value构建键值对rdd.部分uid是昵称，需要以str的形式存在
-    noUID, noPost, noCitedUID = 7, -2, 9
+    noUID, noPost, noBlock, noTitle = 9, 8, 3, 1
     #noUID, noPost = 9, 8
-    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==13).map(lambda x: (x[noUID], [re.sub(r'<[^>]+>','',x[noPost]), x[noCitedUID]])).filter(lambda x: len(x[0])<20)#.replace("$", "_").replace(".", "_")
+    uidDataRDD = dataRDD.map(lambda x: x.replace('\n', '').split('#')).filter(lambda x: len(x)==15)\
+        .map(lambda x: (x[noUID], [re.sub(r'<[^>]+>','',x[noPost]), x[noBlock], x[noTitle]]))
     #按照uid分组后，删除post个数小于阈值
-    minPostNum = 50   
+    minPostNum = 0
     #print(uidDataRDD.count(), uidDataRDD.take(1))
     uidPostListRDD = uidDataRDD.groupByKey().mapValues(lambda x: list(x)[:200]).filter(lambda x: len(x[1])> minPostNum).repartition(10000)#.sample(False, 0.01, 666)
     with open('res.txt', 'w') as f:
@@ -272,7 +278,7 @@ if __name__ == '__main__':
     #'''
 
 
-#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract.py
+#spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract_adv.py
 
     
     
