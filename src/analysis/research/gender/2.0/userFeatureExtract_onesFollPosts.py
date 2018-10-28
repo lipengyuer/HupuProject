@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     #存储数据
     advFollPostDataRDD.foreach(lambda x: saveRecord2Mongo(x, "onesFollPostFeature"))
-    print("记录数是", advFollPostDataRDD.count(), "表1的大小是", advFollPostDataRDD.take(2))
+    # print("记录数是", advFollPostDataRDD.count(), "表1的大小是", advFollPostDataRDD.take(2))
     #没毛病，这次我们需要知道一个用户的主贴的跟帖的情况。而原始回复数据里没有主贴对应用户uid,需要关联才能得到.
     #使用用户个人资料来开始，也是为了缩小数据规模.
     # spark2-submit --master yarn-client --executor-memory 5G --conf spark.pyspark.python=/opt/anaconda2/envs/python36/bin/python --conf spark.executorEnv.PYTHONHASHSEED=0 userFeatureExtract_onesFollPosts.py

@@ -7,7 +7,7 @@ import config
 
 def myLogin():
     # 设置保存cookie的文件，同级目录下的cookie.txt
-    filename = r'C:\Users\Administrator\PycharmProjects\test\hupu\crawler\cookies.txt'  # cookie位置，这里使用的是火狐浏览器的cookie
+    filename = r'C:\Users\Administrator\PycharmProjects\test\src\crawler\cookies.txt'  # cookie位置，这里使用的是火狐浏览器的cookie
     # 声明一个MozillaCookieJar对象实例来保存cookie，之后写入文件
     cookie = cookiejar.MozillaCookieJar()
     cookie.load(filename, ignore_discard=True, ignore_expires=True)

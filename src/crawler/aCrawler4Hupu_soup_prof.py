@@ -8,8 +8,30 @@ import pymysql
 import multiprocessing
 from multiprocessing import Pool
 import time
-from entity import personalInfo
 import runTime
+from  http import cookiejar
+from  urllib import request
+
+class personalInfo():
+    def __init__(self):
+        pass
+
+def trans2Json(self):
+        return self.__dict__
+
+def myLogin():
+    # 设置保存cookie的文件，同级目录下的cookie.txt
+    filename = r'C:\Users\Administrator\PycharmProjects\test\src\crawler\cookies.txt'  # cookie位置，这里使用的是火狐浏览器的cookie
+    # 声明一个MozillaCookieJar对象实例来保存cookie，之后写入文件
+    cookie = cookiejar.MozillaCookieJar()
+    cookie.load(filename, ignore_discard=True, ignore_expires=True)
+    # 利用urllib2库的HTTPCookieProcessor对象来创建cookie处理器
+    handler = request.HTTPCookieProcessor(cookie)
+    # 通过handler来构建opener
+    opener = request.build_opener(handler)
+    opener.addheaders = [('User-Agent',
+                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36')]
+    return opener
 
 
 def writeitintoafile(line, path):  # 将字符串追加到文件里
@@ -31,12 +53,13 @@ def getAPage(myurl):  #
             if count == 1:
                 break
             # print(myurl)
+
             response = runTime.opener.open(myurl, timeout=10)
             content = response.read()  # .decode('gbk').encode('utf-8')
             # print(content)
             return content
-        except:
-            print("网络有问题",myurl, time.time())
+        except Exception as e:
+            print("网络有问题",e,myurl, time.time())
             time.sleep(0)
             count += 1
     return 'nothing'
@@ -233,12 +256,11 @@ def getInformationOfAUser(uid):
                 # print('正在获取粉丝信息')
                 getFans(Person)
                 # print('正在组织数据')
-                result = Person.trans2Json()
+                result = Person.__dict__
                 # print("正在向数据库写数据", uid)
                 # runTime.mongoCollection.insert(result)
                 runTime.mongoCollection.update({"_id": str(uid)},
                                                   {"$set": result}, upsert=True)
-
                 break
             # except:
             #     print('获取用户', uid, '的数据失败， 这是第', _, '次尝试。')
@@ -274,7 +296,7 @@ def worker():
     while (runTime.UID_QUEUE_PERSON).qsize()>0:
         # print((runTime.UID_QUEUE).qsize())
         uid = (runTime.UID_QUEUE_PERSON).get()
-        print("正在处理的用户是",uid )
+        print("正在处理的用户是",uid ,"剩余", (runTime.UID_QUEUE_PERSON).qsize())
         getInformationOfAUser(uid)
     return
 
@@ -299,13 +321,13 @@ def getUIDsFromFile():
 
 def getUIDsFromFiles():
     lines = []
-    dirName = r"c:\Users\Administrator\PycharmProjects\test\hupu\crawler\uid1"
+    dirName = r"../../data/uid1"
     files = os.listdir(dirName)
     for fileName in files:
         print(dirName + '\\' + fileName)
         with open(dirName + '\\' + fileName, "r", encoding='utf8') as f:
             lines += f.readlines()
-    dirName = r"c:\Users\Administrator\PycharmProjects\test\hupu\crawler\uid2"
+    dirName = r"../../data/uid2"
     files = os.listdir(dirName)
     for fileName in files:
         print(dirName + '\\' + fileName)
@@ -319,6 +341,7 @@ def getUIDsFromFiles():
 import threading
 from multiprocessing import Queue,Process
 if __name__ == '__main__':
+    runTime.opener = myLogin()
     # uids = getUIDsFromMySQL()
     uids = getUIDsFromFiles()
     # uids = ['139715637919000']
@@ -329,9 +352,11 @@ if __name__ == '__main__':
         if uid not in runTime.BLOOMFILTER:
             # print(uid, runTime.UID_QUEUE_PERSON.qsize())
             runTime.UID_QUEUE_PERSON.put(uid)
+    del uids
+    runTime.BLOOMFILTER = None
     print('uid队列的初始长度是', runTime.UID_QUEUE_PERSON.qsize())
     print('开始获取数据')
-    for i in range(0,20):
+    for i in range(0,5):
         # p = Process(target=worker)
         p = threading.Thread(target=worker)
         p.start()

@@ -95,25 +95,7 @@ def getWordFreqDocumentFreq(userWordFreqMapList, jobName = 'wordFreqDocumentFreq
         tf = wordFreqMap.get(word, 0)
         idf = numDoc/(ducumentFreqMap.get(word, 1))
         TFIDFMAP[word] = np.log(tf*idf)
-    # print("词频top N 是：")
-    # for line in wordFreqTopN[:N]:
-    #     print(line[0], line[1])
-    #     print("词频top N 是：")
-    # print("###################")
-    # print("文档频率top N 是:")
-    # for line in documentFreqTopN[:N]:
-    #     print(line[0], line[1])
-    # print("###################")
-    
-    #把统计结果存储到文本文件，便于仔细分析
-    # with open(jobName + ".txt", 'w') as f:
-    #     f.write("word wordFreq word documentFreq\n")
-    #     for i in range(len(documentFreqTopN)):
-    #         line = wordFreqTopN[i][0] + " " +str(wordFreqTopN[i][1]) + " " \
-    #                + documentFreqTopN[i][0] + " "+ str(documentFreqTopN[i][1]) + '\n'
-    #         f.write(line)
     #返回频率和文档频率都比较高的gram，作为较优特征
-    #res = set(map(lambda x: x[0], wordFreqTopN[500:10000] + documentFreqTopN[500:10000]))
     res = sorted(TFIDFMAP.items(), key= lambda x: x[1],reverse=True)[1000:50000]
     res = set(map(lambda x: x[0], res))
     return res

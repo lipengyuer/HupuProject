@@ -25,7 +25,7 @@ def wordFreq(wordsLists):
                     wordFreqMap[word] += 1
                 else:
                     wordFreqMap[word] = 1
-    return wordFreqMap
+    return map2List(wordFreqMap)
 
 #字符ngram
 def ngramFreq(postList, n=1):
@@ -37,7 +37,7 @@ def ngramFreq(postList, n=1):
                 ngramFreqMap[ngram] += 1
             else:
                 ngramFreqMap[ngram] = 1
-    return ngramFreqMap
+    return map2List(ngramFreqMap)
 
 #词性标签ngram
 def postagNgramFreq(postagsLists, n=1):
@@ -50,7 +50,7 @@ def postagNgramFreq(postagsLists, n=1):
                     ngramFreqMap[ngram] += 1
                 else:
                     ngramFreqMap[ngram] = 1
-    return ngramFreqMap
+    return map2List(ngramFreqMap)
 
 #特殊符号频率
 def specialCharFreq(postList):
@@ -66,7 +66,7 @@ def specialCharFreq(postList):
                 markFreqMap[ngram] += 1
             else:
                 markFreqMap[ngram] = 1
-    return markFreqMap
+    return map2List(markFreqMap)
 
 def nerFreq():
     #命名实体频率暂时不考虑
@@ -86,7 +86,7 @@ def functionWordFreq(wordsLists):
                     wordFreqMap[word] += 1
                 else:
                     wordFreqMap[word] = 1
-    return wordFreqMap
+    return map2List(wordFreqMap)
 
 #标点符号频率
 def punctuationMarkFreq(postList):
@@ -102,7 +102,7 @@ def punctuationMarkFreq(postList):
                 pmFreqMap[ngram] += 1
             else:
                 pmFreqMap[ngram] = 1
-    return pmFreqMap
+    return map2List(pmFreqMap)
 
     
 #基于post列表，以及对应的每一句的分词结果和词性标注结果，来统计相关语言风格特征
@@ -199,6 +199,11 @@ def blockListDetail(blockList):
     blockList = list(set(blockList))
     return blockList
 
+def map2List(mapData):
+    res = []
+    for key in mapData:
+        res.append([key, mapData[key]])
+    return res
 def extractTextFeatures(data, userInfoCollectionName=''):
     uid, dataList = data[0], data[1]
     postList, blockList, titleList = list(map(lambda x:x[0], dataList)),\
@@ -213,7 +218,7 @@ def extractTextFeatures(data, userInfoCollectionName=''):
     #各类特征放在不同的key下
     featureMap = {"uid": uid,
                   'gender': gender,
-                  "wordFreq": wordFreq(wordsLists), 
+                  "wordFreq": wordFreq(wordsLists),
                   "unigramFreq": ngramFreq(postList, n=1),
                    'bigram': ngramFreq(postList, n=2), 
                   'postagUnigramFreq': postagNgramFreq(postagsLists, n=1), 
